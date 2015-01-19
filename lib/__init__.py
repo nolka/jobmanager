@@ -30,15 +30,51 @@ class WorkManager(object):
         logging.info("WorkManager initialized")
 
     def create_workers(self, klass, workers_count=None):
-        self.workers_count = workers_count if workers_count else multiprocessing.cpu_count()
-        logging.debug("Creating worker threads: %d" % self.workers_count)
-        self.jobs = Queue(workers_count)
-        for i in range(self.workers_count):
+            self.workers_count = workers_count if workers_count is not None else multiprocessing.cpu_count()
+            logging.debug("Creating worker threads: %d" % self.workers_count)
+            self.jobs = Queue(self.workers_count)
+            for i in xrange(self.workers_count):
+                self._instantiate_worker(klass, 'Worker-%d' % i)
+
+    def configure_workers(self, *configurations):
+        logging.debug("Creating workers(%d) by configuration..." % len(configurations))
+        if not self.jobs:
+            self.jobs = Queue(len(configurations))
+
+        for config in configurations:
+            if isinstance(config, type):
+                self._instantiate_worker(config)
+                continue
+
+            klass = config[0]
+            logging.debug("Instantiating type %s" % klass.__name__)
+            if len(config) == 1:
+                self._instantiate_worker(klass)
+            if len(config) == 2:
+                self._instantiate_worker(klass, args=config[1])
+            if len(config) == 3:
+                self._instantiate_worker(klass, args=config[1], kwargs=config[2])
+
+
+    def _instantiate_worker(self, klass, name=None, args=None, kwargs=None):
+        if not args and not kwargs:
             instance = klass()
-            t = Process(target=instance, args=(self.jobs, self.results))
-            instance.name = "Worker-%d" % i
-            logging.info("Created worker %s" % instance.name)
-            self.workers.append(t)
+        elif args and kwargs:
+            instance = klass(*args, **kwargs)
+        elif args and not kwargs:
+            instance = klass(*args)
+        elif not args and kwargs:
+            instance = klass(**kwargs)
+
+        if not hasattr(instance, 'name'):
+            instance.name = None
+            if instance.name is None:
+                instance.name = name if name else "<Unnamed worker %d>" % id(instance)
+
+        t = Process(target=instance, name=instance.name, args=(self.jobs, self.results))
+
+        self.workers.append(t)
+        logging.info("Created worker %s in thread %d" % (instance.name, id(t)))
 
     def do_work(self):
         for t in self.workers:

@@ -16,3 +16,7 @@ class UrlParser(BaseWorker):
 
         if result.status_code == 200:
             return len(result.text)
+
+class NamedUrlParser(UrlParser):
+    def __init__(self, name):
+        self.name = name

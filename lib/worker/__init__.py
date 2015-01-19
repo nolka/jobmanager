@@ -3,9 +3,10 @@ __author__ = 'nolka'
 import logging
 import traceback
 
-class BaseWorker(object):
 
+class BaseWorker(object):
     def listen_tasks(self, jobs, results):
+        print locals()
         while True:
             task = jobs.get()
             if task is None:
@@ -15,7 +16,7 @@ class BaseWorker(object):
             try:
                 task.result = self.run(task)
             except Exception as e:
-                logging.error("Error occurred in thread %s: %s\n%s"% (self.name, e, traceback.format_exc()))
+                logging.error("Error occurred in thread %s: %s\n%s" % (self.name, e, traceback.format_exc()))
                 task.result = None
             finally:
                 results.put(task)

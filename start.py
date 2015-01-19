@@ -3,11 +3,10 @@
 __author__ = 'nolka'
 
 import logging
-
 from timeit import default_timer as timer
 
-from lib import WorkManager, SimpleTask
-from lib.worker.urlparser import UrlParser
+from lib import WorkManager
+from lib.worker.urlparser import UrlParser, NamedUrlParser
 
 
 def main():
@@ -27,7 +26,9 @@ def main():
 
     start = timer()
     m = WorkManager(result_handler)
-    m.create_workers(UrlParser)
+
+    # m.create_workers(UrlParser, 4)
+    m.configure_workers((NamedUrlParser, ('ololo',)), (NamedUrlParser, ('trololo',)), UrlParser, (UrlParser,))
     m.do_work()
 
     listen_files = [
@@ -52,7 +53,7 @@ def main():
     m.exit()
 
     logging.warn("Done!")
-    print (timer()-start)
+    print (timer() - start)
 
 
 if __name__ == "__main__":
