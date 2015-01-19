@@ -1,2 +1,2 @@
-# py-thread-test
-Multithreaded job manager with pluggable workers test
+# jobmanager
+Multithreaded job manager with pluggable workers
