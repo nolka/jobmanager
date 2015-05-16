@@ -19,6 +19,7 @@ class BaseWorker(object):
                     task = r
                 else:
                     task.result = r
+
             except Exception as e:
                 logging.error("Error occurred in thread %s: %s\n%s" % (self.name, e, traceback.format_exc()))
                 task.result = None

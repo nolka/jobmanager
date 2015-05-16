@@ -20,15 +20,15 @@ def main():
             task = results.get()
             ":type task: SimpleTask"
             if task is None:
-                logging.warn("Received poison...")
+                logging.warn("RH: Received poison...")
                 break
-            logging.info("Received task id: %d with result length: %s" % (task.index, task.result))
+            else:
+                logging.info("Received task id: %d with result length: %s" % (task.index, task.result))
 
     start = timer()
     m = WorkManager(result_handler)
 
-    # m.create_workers(UrlParser, 4)
-    m.configure_workers((NamedUrlParser, ('ololo',)), (NamedUrlParser, ('trololo',)), UrlParser, (UrlParser,))
+    m.add_workers(NamedUrlParser('ololo'), NamedUrlParser('trololo'), UrlParser(), UrlParser())
     m.do_work()
 
     listen_files = [

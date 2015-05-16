@@ -8,11 +8,12 @@ from lib import SimpleTask
 
 
 class UrlParser(BaseWorker):
-    def run(self, url):
+    def run(self, task):
         """
         :type url: SimpleTask
         """
-        result = requests.get('%s' % url)
+
+        result = requests.get('%s' % task.data)
 
         if result.status_code == 200:
             return len(result.text)
