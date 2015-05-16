@@ -6,54 +6,48 @@ import logging
 import time
 from multiprocessing import Queue, Process
 
-class SimpleTask(object):
-    __slots__ = ['index', 'data', 'result']
-    def __init__(self, data, index=None):
-        self.index = index
-        self.data = data
-
-    def __unicode__(self):
-        return '%s' % self.data
-
-    def __str__(self):
-        return unicode(self.data).encode('utf-8')
+from lib import SimpleTask
 
 class WorkManager(object):
     def __init__(self, result_handler=None):
-        logging.basicConfig(format="%(asctime)s: %(message)s", level=logging.DEBUG)
+        self.logger = logging.getLogger("jobmanager.WorkManager")
+        # console = logging.StreamHandler()
+        # console.setFormatter(logging.Formatter("%(asctime)s: %(message)s"))
+        # self.logger.addHandler(console)
+
         self.result_handler = result_handler
         self.running_workers = 0
         self.jobs = None
         self.results = Queue()
         self.results_handler = None
         self.workers = list()
-        logging.info("WorkManager initialized")
+        self.logger.info("WorkManager initialized")
 
     def create_workers(self, klass, workers_count=None):
             self.workers_count = workers_count if workers_count is not None else multiprocessing.cpu_count()
-            logging.debug("Creating worker threads: %d" % self.workers_count)
+            self.logger.debug("Creating worker threads: %d" % self.workers_count)
             self.jobs = Queue(self.workers_count)
             for i in xrange(self.workers_count):
                 self._instantiate_worker(klass, 'Worker-%d' % i)
 
     def configure_workers(self, *configurations):
-        logging.debug("Creating workers(%d) by configuration..." % len(configurations))
+        self.logger.debug("Creating workers(%d) by configuration..." % len(configurations))
         if not self.jobs:
             self.jobs = Queue(len(configurations))
 
-        for config in configurations:
+        for _id, config in enumerate(configurations):
             if isinstance(config, type):
                 self._instantiate_worker(config)
                 continue
 
             klass = config[0]
-            logging.debug("Instantiating type %s" % klass.__name__)
+            self.logger.debug("Instantiating type %s" % klass.__name__)
             if len(config) == 1:
-                self._instantiate_worker(klass)
+                self._instantiate_worker(klass, "%s-%s" % (klass.__name__, _id))
             if len(config) == 2:
-                self._instantiate_worker(klass, args=config[1])
+                self._instantiate_worker(klass, "%s-%s" % (klass.__name__, _id), args=config[1])
             if len(config) == 3:
-                self._instantiate_worker(klass, args=config[1], kwargs=config[2])
+                self._instantiate_worker(klass, "%s-%s" % (klass.__name__, _id), args=config[1], kwargs=config[2])
 
 
     def _instantiate_worker(self, klass, name=None, args=None, kwargs=None):
@@ -67,14 +61,12 @@ class WorkManager(object):
             instance = klass(**kwargs)
 
         if not hasattr(instance, 'name'):
-            instance.name = None
-            if instance.name is None:
-                instance.name = name if name else "<Unnamed worker %d>" % id(instance)
+            instance.name = name if name else "<Unnamed worker %d>" % id(instance)
 
         t = Process(target=instance, name=instance.name, args=(self.jobs, self.results))
 
         self.workers.append(t)
-        logging.info("Created worker %s in thread %d" % (instance.name, id(t)))
+        self.logger.debug("Created worker %s in thread %d" % (instance.name, id(t)))
 
     def do_work(self):
         for t in self.workers:
@@ -95,7 +87,7 @@ class WorkManager(object):
         self.jobs.put(SimpleTask(task, task_id))
 
     def exit(self, wait_until_exit=True):
-        logging.info("Running workers count %d" % self.running_workers)
+        self.logger.debug("Running workers count %d" % self.running_workers)
         for i in xrange(self.running_workers):
             self.jobs.put(None)
 
@@ -120,7 +112,7 @@ class WorkManager(object):
                     else:
                         _alive_threads = False
                 if _alive_threads or self.result_handler.is_alive():
-                    print "waiting..."
+                    self.logger.warn("waiting...")
                     time.sleep(.1)
                 else:
                     break

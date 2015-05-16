@@ -2,11 +2,11 @@ __author__ = 'nolka'
 
 import logging
 import traceback
+from lib import SimpleTask
 
 
 class BaseWorker(object):
     def listen_tasks(self, jobs, results):
-        print locals()
         while True:
             task = jobs.get()
             if task is None:
@@ -14,7 +14,11 @@ class BaseWorker(object):
                 break
 
             try:
-                task.result = self.run(task)
+                r = self.run(task)
+                if issubclass(r.__class__, SimpleTask):
+                    task = r
+                else:
+                    task.result = r
             except Exception as e:
                 logging.error("Error occurred in thread %s: %s\n%s" % (self.name, e, traceback.format_exc()))
                 task.result = None
