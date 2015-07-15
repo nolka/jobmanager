@@ -56,7 +56,11 @@ class WorkManager(object):
             task_id = self.jobs_added
             self.jobs_added += 1
 
-        self.jobs.put(task_wrapper(task, task_id))
+        if isinstance(task, SimpleTask):
+            task.index = task_id
+            self.jobs.put(task)
+        else:
+            self.jobs.put(task_wrapper(task, task_id))
 
     def exit(self, wait_until_exit=True):
         self.logger.debug("Running workers count %d" % self.running_workers)
