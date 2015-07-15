@@ -6,17 +6,12 @@ import logging
 import time
 from multiprocessing import Queue, Process
 
-from tasks import SimpleTask
+from tasks import SimpleTask, BaseTask
 
 class WorkManager(object):
-    def __init__(self, result_handler=None):
-        self.logger = logging.getLogger("jobmanager.WorkManager")
-        self.logger.setLevel(logging.DEBUG)
-        console = logging.StreamHandler()
-        console.setFormatter(logging.Formatter("%(asctime)s: %(message)s"))
-        self.logger.addHandler(console)
-
+    def __init__(self, result_handler=None, logger=None):
         self.result_handler = result_handler
+        self.logger = logger
         self.running_workers = 0
         self.jobs_added = 0
         self.jobs = None
@@ -56,7 +51,7 @@ class WorkManager(object):
             task_id = self.jobs_added
             self.jobs_added += 1
 
-        if isinstance(task, SimpleTask):
+        if isinstance(task, BaseTask):
             task.index = task_id
             self.jobs.put(task)
         else:

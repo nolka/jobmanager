@@ -20,13 +20,20 @@ def main():
             task = results.get()
             ":type task: SimpleTask"
             if task is None:
-                logging.warn("RH: Received poison...")
+                print ("RH: Received poison...")
                 break
             else:
-                logging.info("Received task id: %d with result length: %s" % (task.index, task.result))
+                print("Received task id: %d with result length: %s" % (task.id, task.result))
 
     start = timer()
-    m = WorkManager(result_handler)
+
+    logger = logging.getLogger("jobmanager.WorkManager")
+    logger.setLevel(logging.DEBUG)
+    console = logging.StreamHandler()
+    console.setFormatter(logging.Formatter("%(asctime)s: %(message)s"))
+    logger.addHandler(console)
+
+    m = WorkManager(result_handler, logger)
 
     m.add_workers(NamedUrlParser('ololo'), NamedUrlParser('trololo'), UrlParser(), UrlParser())
     m.do_work()

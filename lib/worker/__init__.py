@@ -2,7 +2,7 @@ __author__ = 'nolka'
 
 import logging
 import traceback
-from lib import SimpleTask
+from lib import BaseTask
 
 
 class BaseWorker(object):
@@ -15,10 +15,10 @@ class BaseWorker(object):
 
             try:
                 r = self.run(task)
-                if issubclass(r.__class__, SimpleTask):
+                if issubclass(r.__class__, BaseTask):
                     task = r
                 else:
-                    task.result = r
+                    task.done(r)
 
             except Exception as e:
                 logging.error("Error occurred in thread %s: %s\n%s" % (self.name, e, traceback.format_exc()))
