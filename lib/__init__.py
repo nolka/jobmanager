@@ -1,12 +1,10 @@
-import multiprocessing
-
 __author__ = 'nolka'
 
-import logging
 import time
 from multiprocessing import Queue, Process
 
 from tasks import SimpleTask, BaseTask
+
 
 class WorkManager(object):
     def __init__(self, result_handler=None, logger=None):
@@ -40,7 +38,7 @@ class WorkManager(object):
 
     def do_work(self):
         for w in self.workers:
-            w._thread_handle.start()
+            w.start()
             self.running_workers += 1
 
         self.result_handler = Process(target=self.result_handler, args=(self, self.results))
@@ -52,29 +50,35 @@ class WorkManager(object):
             self.jobs_added += 1
 
         if isinstance(task, BaseTask):
-            task.index = task_id
+            task.set_id(task_id)
             self.jobs.put(task)
         else:
-            self.jobs.put(task_wrapper(task, task_id))
+            self.jobs.put(task_wrapper(task_id, data=task))
 
     def exit(self, wait_until_exit=True):
         self.logger.debug("Running workers count %d" % self.running_workers)
         for i in xrange(self.running_workers):
             self.jobs.put(None)
 
-        if wait_until_exit:
-            for _id, w in enumerate(self.workers):
-                self.workers[_id]._thread_handle.join()
-                self.running_workers -= 1
-
+        self.logger.debug("Joining jobs thread...")
         self.jobs.close()
         self.jobs.join_thread()
+
+        if wait_until_exit:
+            for _id, w in enumerate(self.workers):
+                self.logger.debug("Joining thread %s..." % _id)
+                self.workers[_id].stop()
+                # self.workers[_id]._thread_handle.join()
+                self.running_workers -= 1
+
+        self.logger.debug("Joining results thread...")
         self.results.put(None)
         self.result_handler.join()
         self.results.close()
         self.results.join_thread()
 
         if wait_until_exit:
+            self.logger.debug("Waiting worker threads for exist...")
             _alive_threads = True
             while _alive_threads:
                 for w in self.workers:
