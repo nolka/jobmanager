@@ -3,7 +3,7 @@ __author__ = 'nolka'
 import time
 from multiprocessing import Queue, Process
 
-from tasks import SimpleTask, BaseTask
+from task import SimpleTask, BaseTask
 
 
 class WorkManager(object):
@@ -11,6 +11,7 @@ class WorkManager(object):
         self.result_handler = result_handler
         self.logger = logger
         self.running_workers = 0
+        self._counter = 0
         self.jobs_added = 0
         self.jobs = None
         self.results = Queue()
@@ -28,8 +29,7 @@ class WorkManager(object):
 
     def _configure(self, instance, name=None):
 
-        if not hasattr(instance, 'name'):
-            instance.name = name if name else "<Unnamed worker %d>" % id(instance)
+        instance.name = name if name else "<{} worker {}>".format(type(instance).__name__, len(self.workers))
 
         instance._thread_handle = Process(target=instance, name=instance.name, args=(self.jobs, self.results))
 
@@ -43,6 +43,7 @@ class WorkManager(object):
 
         self.result_handler = Process(target=self.result_handler, args=(self, self.results))
         self.result_handler.start()
+
 
     def add_job(self, task, task_id=None, task_wrapper=SimpleTask):
         if task_id is None:

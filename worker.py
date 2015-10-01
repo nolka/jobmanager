@@ -3,11 +3,13 @@ __author__ = 'nolka'
 import logging
 import traceback
 
-from jobmanager.lib import BaseTask
+from task import BaseTask
 
 
 class BaseWorker(object):
-    def __init__(self):
+    def __init__(self, name=None, manager=None):
+        self.name = name
+        self.manager = manager
         self.shutdown_pending = False
         self._thread_handle = None
 
@@ -28,13 +30,12 @@ class BaseWorker(object):
 
                 except Exception as e:
                     logging.error("Error occurred in thread %s: %s\n%s" % (self.name, e, traceback.format_exc()))
-                    task.result = None
+                    task.done(None, "\n".join((e, traceback.format_exc())))
                 finally:
                     results.put(task)
             except KeyboardInterrupt as e:
                 logging.warn("Terminating worker by Ctrl+C")
                 return None
-
 
     def run(self, task):
         raise NotImplementedError("Not implemented!")

@@ -6,7 +6,7 @@ import logging
 from timeit import default_timer as timer
 
 from lib import WorkManager
-from lib.worker.urlparser import UrlParser, NamedUrlParser
+from jobmanager.workers.urlparser import UrlParser, NamedUrlParser
 
 
 def main():

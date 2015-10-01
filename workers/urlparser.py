@@ -1,10 +1,9 @@
 __author__ = 'nolka'
 
 import requests
-import random
 
-from lib.worker import BaseWorker
-from lib import SimpleTask
+from ..worker import BaseWorker
+from ..task import SimpleTask
 
 
 class UrlParser(BaseWorker):
@@ -17,6 +16,7 @@ class UrlParser(BaseWorker):
 
         if result.status_code == 200:
             return len(result.text)
+
 
 class NamedUrlParser(UrlParser):
     def __init__(self, name):
